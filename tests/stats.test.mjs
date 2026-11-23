@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import * as S from '../web/stats.js';
-import { generate, STRATEGIES } from '../web/generator.js';
+import { generate, STRATEGIES, buildHistory, lookupHistory } from '../web/generator.js';
 
 const root = new URL('../', import.meta.url);
 const index = JSON.parse(readFileSync(new URL('data/json/index.json', root)));
@@ -53,17 +53,23 @@ for (const meta of index.games.filter((g) => g.count > 0)) {
     assert.equal(all.length, meta.count);
     const draws = S.filterPeriod(meta, all, S.periodOptions(meta, all)[0].id);
     const era = S.currentEra(meta);
-    const ctx = { meta, draws, pick: meta.pickCount || 0 };
+    const ctx = { meta, draws, pick: meta.pickCount || 0, history: buildHistory(meta, all) };
+    // een echte trekking moet als 'al gevallen' herkend worden
+    const lastDraw = all[all.length - 1];
+    const probe = meta.key === 'keno' ? { main: lastDraw.main.slice(0, 10) } : lastDraw;
+    const ph = lookupHistory(ctx.history, probe);
+    assert.ok(ph.count >= 1 && ph.last === lastDraw.date, `${meta.key}: historiek herkent laatste trekking`);
+    if (meta.hasSign) assert.ok(ph.countWithSign >= 1);
     if (meta.kind === 'pool') {
       ctx.mainFreq = S.frequencies(meta, draws, 'main', 1, era.mainMax);
       if (meta.extraCount) ctx.extraFreq = S.frequencies(meta, draws, 'extra', 1, meta.extraFromMainPool ? era.mainMax : era.extraMax);
       ctx.patterns = S.poolPatterns(meta, draws);
-      ctx.pastSet = new Set(all.map((d) => d.main.join('-')));
     } else {
       ctx.digitPatterns = S.digitPatterns(meta, draws);
     }
     for (const strategy of Object.keys(STRATEGIES)) {
-      const out = generate(ctx, strategy, 10);
+      for (const avoidPast of [true, false]) {
+      const out = generate(ctx, strategy, 10, { avoidPast });
       assert.equal(out.length, 10, `${meta.key}/${strategy}`);
       for (const s of out) {
         const k = meta.key === 'keno' ? ctx.pick : meta.mainCount;
@@ -77,12 +83,18 @@ for (const meta of index.games.filter((g) => g.count > 0)) {
           }
           if (strategy === 'balanced' && meta.key !== 'keno') {
             assert.ok(!s.main.every((n) => n <= 31), 'geen pure verjaardagscombinatie');
-            assert.ok(!ctx.pastSet.has(s.main.join('-')), 'geen eerder getrokken combinatie');
           }
         } else {
           assert.ok(s.main.every((n) => n >= 0 && n <= 9));
           if (meta.hasSign) assert.ok(typeof s.sign === 'string');
         }
+        assert.ok(s.history && Number.isInteger(s.history.count), 'historiek ingevuld');
+        if (avoidPast && meta.key !== 'pick3') {
+          assert.equal(s.history.count, 0, `${meta.key}/${strategy}: combinatie viel al eens`);
+          assert.equal(s.notFresh, false);
+        }
+        if (avoidPast && s.history.count > 0) assert.equal(s.notFresh, true);
+      }
       }
     }
   });

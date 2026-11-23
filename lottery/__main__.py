@@ -61,7 +61,8 @@ def rebuild() -> None:
 
 SECURITY_HEADERS = {
     "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
-                               "connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+                               "connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; "
+                               "frame-ancestors 'none'",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "no-referrer",
@@ -120,7 +121,7 @@ def make_handler():
             pass
 
     Handler.extensions_map = {**Handler.extensions_map, ".js": "text/javascript", ".mjs": "text/javascript",
-                              ".sqlite": "application/vnd.sqlite3", ".csv": "text/csv; charset=utf-8"}
+                              ".sqlite": "application/vnd.sqlite3", ".webmanifest": "application/manifest+json", ".csv": "text/csv; charset=utf-8"}
     return Handler
 
 

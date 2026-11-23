@@ -14,6 +14,10 @@ Per spel toont de app:
 - de **winkans** op de hoofdprijs;
 - een **generator** die één of meerdere voorstellen maakt (1–50), met vijf methodes:
   gebalanceerd (aanbevolen), warme getallen, achterstallige getallen, mix, puur toeval;
+- bij elk voorstel of die combinatie **al eens gevallen** is (hoe vaak en wanneer laatst), en
+  een **schakelaar** "Enkel combinaties die nog nooit gevallen zijn" (werkt bij alle methodes
+  en spellen; bij Keno: getallen die nog nooit samen getrokken werden). Bij Pick3 zijn bijna
+  alle 1.000 combinaties al eens gevallen; dan meldt de app dat er geen nieuwe mogelijk is;
 - de volledige **uitslagenlijst** met zoekfunctie.
 
 > **Eerlijk is eerlijk.** Bij een eerlijke trekking heeft elke combinatie exact dezelfde kans.
@@ -38,6 +42,22 @@ python3 -m lottery full           # volledige historiek (hervat waar gebleven)
 python3 -m lottery rebuild        # JSON/SQLite opnieuw bouwen uit de CSV's (offline)
 python3 -m lottery update --games lotto,euromillions
 ```
+
+## Op je gsm als app
+
+De app is een installeerbare web-app (PWA): met een eigen icoon op je beginscherm, schermvullend
+zonder adresbalk, en ook bruikbaar zonder internet (de laatst opgehaalde uitslagen worden bewaard).
+
+1. **Eenmalig: GitHub Pages aanzetten.** In de repository: *Settings → Pages → Build and deployment →
+   Source: GitHub Actions*. Merge daarna naar `main`; de workflow publiceert de app op
+   `https://<gebruikersnaam>.github.io/Nationale-Loterij/web/` en werkt ze na elke trekking bij.
+   GitHub Pages vanuit een **privé**-repository vereist een betaald GitHub-abonnement (Pro);
+   anders moet de repository publiek worden. De gepubliceerde site is in beide gevallen publiek
+   bereikbaar, maar bevat enkel de app en de (publieke) uitslagen: geen broncode, geen
+   persoonsgegevens, geen sleutels.
+2. **Installeren op je gsm.** Open de link:
+   - *Android (Chrome):* menu ⋮ → **App installeren** / **Toevoegen aan startscherm**.
+   - *iPhone (Safari):* deelknop → **Zet op beginscherm**.
 
 ## Databestanden
 
@@ -120,4 +140,7 @@ tests/          Tests
   staat enkel eigen bestanden toe. Gegevens worden altijd als tekst (nooit als HTML) getoond.
 - De lokale server luistert enkel op `127.0.0.1` en stuurt beveiligingsheaders mee.
 - De scraper accepteert enkel HTTPS, begrenst de paginagrootte en valideert elke waarde.
-- De GitHub-workflow heeft enkel schrijfrechten op de repository-inhoud.
+- De GitHub-workflow heeft per taak enkel de rechten die ze nodig heeft (data committen,
+  respectievelijk publiceren op Pages). Op Pages komen enkel `web/` en `data/csv|json`.
+- De service worker verwerkt enkel eigen bestanden (zelfde domein, GET) en bewaart lokaal enkel
+  uitslagen en app-bestanden; als voorkeur wordt enkel de stand van de schakelaar onthouden.

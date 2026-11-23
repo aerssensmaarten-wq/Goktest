@@ -1,10 +1,18 @@
 import { el, clear, nf, pf, df1 } from './dom.js';
 import { barChart, heatGrid } from './charts.js';
 import * as S from './stats.js';
-import { STRATEGIES, generate } from './generator.js';
+import { STRATEGIES, generate, buildHistory } from './generator.js';
 
 const DATA = '../data';
-const state = { index: null, cache: new Map(), game: null, period: null, strategy: 'balanced', count: 5, pick: 10 };
+const state = { index: null, cache: new Map(), history: new Map(), game: null, period: null, strategy: 'balanced', count: 5, pick: 10, avoidPast: loadPref('avoidPast', true) };
+
+// Voorkeuren onthouden op dit toestel (werkt ook zonder, bv. in privévenster).
+function loadPref(key, fallback) {
+  try { const v = localStorage.getItem(`pref.${key}`); return v === null ? fallback : JSON.parse(v); } catch { return fallback; }
+}
+function savePref(key, value) {
+  try { localStorage.setItem(`pref.${key}`, JSON.stringify(value)); } catch { /* geen opslag beschikbaar */ }
+}
 const $app = document.getElementById('app');
 const $tabs = document.getElementById('tabs');
 const $updated = document.getElementById('updated');
@@ -43,6 +51,7 @@ async function init() {
   $tabs.appendChild(el('a', { href: '#data', class: 'tab', 'data-key': 'data', text: 'Databestanden' }));
   window.addEventListener('hashchange', route);
   route();
+  prefetchForOffline(games);
 }
 
 function route() {
@@ -98,11 +107,12 @@ async function renderGame(meta) {
   // berekeningen
   const ctx = { meta, draws, pick: state.pick };
   const isPool = meta.kind === 'pool';
+  if (!state.history.has(meta.key)) state.history.set(meta.key, buildHistory(meta, all));
+  ctx.history = state.history.get(meta.key);
   if (isPool) {
     ctx.mainFreq = S.frequencies(meta, draws, 'main', 1, era.mainMax);
     if (meta.extraCount) ctx.extraFreq = S.frequencies(meta, draws, 'extra', 1, meta.extraFromMainPool ? era.mainMax : era.extraMax);
     ctx.patterns = S.poolPatterns(meta, draws);
-    ctx.pastSet = new Set(all.map((d) => d.main.join('-')));
   } else {
     ctx.digitPatterns = S.digitPatterns(meta, draws);
   }
@@ -134,7 +144,7 @@ function renderGenerator(meta, ctx) {
   const results = el('div', { class: 'suggestions', 'aria-live': 'polite' });
   const help = el('p', { class: 'muted small', text: STRATEGIES[state.strategy].help });
   const run = () => {
-    const out = generate({ ...ctx, pick: state.pick }, state.strategy, state.count);
+    const out = generate({ ...ctx, pick: state.pick }, state.strategy, state.count, { avoidPast: state.avoidPast });
     clear(results);
     out.forEach((s, i) => {
       const info = [];
@@ -144,6 +154,7 @@ function renderGenerator(meta, ctx) {
       results.appendChild(el('div', { class: 'suggestion' },
         el('span', { class: 'idx', text: `${i + 1}.` }), drawBalls(meta, s),
         el('span', { class: 'muted small', text: info.join(' · ') }),
+        historyBadge(meta, s),
         el('button', { class: 'ghost small', type: 'button', 'aria-label': `Kopieer voorstel ${i + 1}`, onclick: (e) => copy(text, e.currentTarget) }, 'Kopieer')));
     });
   };
@@ -161,11 +172,35 @@ function renderGenerator(meta, ctx) {
           .map((k) => el('option', { value: String(k), selected: k === state.pick ? 'selected' : null, text: String(k) })))));
   }
   controls.push(el('button', { type: 'button', class: 'primary', onclick: run }, 'Genereer voorstellen'));
+  const toggle = el('label', { class: 'switch' },
+    el('input', { type: 'checkbox', role: 'switch', checked: state.avoidPast ? 'checked' : null,
+      onchange: (e) => { state.avoidPast = e.target.checked; savePref('avoidPast', state.avoidPast); run(); } }),
+    el('span', { class: 'switch-track', 'aria-hidden': 'true' }),
+    el('span', { text: meta.key === 'keno' ? 'Enkel getallen die nog nooit samen getrokken werden' : 'Enkel combinaties die nog nooit gevallen zijn' }));
   const box = card('Voorstellen voor je volgende rooster',
-    el('div', { class: 'controls' }, controls), help, results,
-    el('p', { class: 'note', text: 'Eerlijk is eerlijk: elke combinatie heeft bij een eerlijke trekking exact dezelfde kans. De gebalanceerde methode kiest combinaties met de meest voorkomende patronen en vermijdt populaire keuzes (enkel verjaardagen, rijtjes, eerder gewonnen combinaties). Dat verhoogt niet je kans, maar wel je verwachte uitbetaling: win je, dan deel je de pot met minder mensen.' }));
+    el('div', { class: 'controls' }, controls), toggle, help, results,
+    el('p', { class: 'note', text: 'Eerlijk is eerlijk: elke combinatie heeft bij een eerlijke trekking exact dezelfde kans. De gebalanceerde methode kiest combinaties met de meest voorkomende patronen en vermijdt populaire keuzes (enkel verjaardagen, rijtjes). Met de schakelaar sluit je bovendien combinaties uit die al eens gevallen zijn: sommige spelers spelen die bewust opnieuw. Dat verhoogt niet je kans, maar wel je verwachte uitbetaling: win je, dan deel je de pot met minder mensen.' }));
   queueMicrotask(run);
   return box;
+}
+
+function historyBadge(meta, s) {
+  const h = s.history;
+  if (!h) return null;
+  const when = (n, last) => `${n}× · laatst op ${S.fmtDate(last)}`;
+  let text;
+  if (meta.key === 'keno') {
+    text = h.count ? `Al ${when(h.count, h.last)} samen getrokken` : 'Nog nooit samen getrokken';
+  } else if (meta.hasSign) {
+    text = h.count ? `Cijfers vielen al ${when(h.count, h.last)}` : 'Cijfers nog nooit gevallen';
+    if (h.count) text += h.countWithSign ? ` (met dit sterrenbeeld ${h.countWithSign}×)` : ' (nooit met dit sterrenbeeld)';
+  } else {
+    text = h.count ? `Viel al ${when(h.count, h.last)}` : 'Nog nooit gevallen';
+  }
+  const fresh = h.count === 0;
+  return el('span', { class: `badge ${fresh ? 'fresh' : 'seen'}`, title: s.notFresh ? 'Er werd geen combinatie gevonden die nog nooit viel: bij dit spel zijn bijna alle combinaties al eens getrokken.' : null },
+    el('span', { 'aria-hidden': 'true', text: fresh ? '✓ ' : '↻ ' }), text,
+    s.notFresh ? el('span', { text: ' - geen nieuwe combinatie mogelijk' }) : null);
 }
 
 async function copy(text, btn) {
@@ -334,6 +369,21 @@ function renderData() {
       el('pre', { text: "-- voorbeeld: meest getrokken Lotto-getallen\nSELECT getal, aantal FROM frequentie\nWHERE spel = 'lotto' AND soort = 'hoofd'\nORDER BY aantal DESC LIMIT 10;" })),
     card('Hoe worden de gegevens bijgewerkt?',
       el('p', { text: 'Na elke trekking haalt een automatische taak (GitHub Actions, zie .github/workflows/update.yml) de nieuwe uitslagen op, werkt de CSV- en JSON-bestanden bij en commit ze (de SQLite-database bouw je lokaal opnieuw met "python -m lottery update" of "rebuild"). De statistieken in deze app worden telkens bij het openen opnieuw berekend uit die bestanden. Handmatig bijwerken kan met "python -m lottery update".' })));
+}
+
+// Laat de service worker alle uitslagen bewaren, zodat elk spel ook offline werkt.
+function prefetchForOffline(games) {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then((reg) => {
+    const urls = games.map((g) => new URL(`${DATA}/json/${encodeURIComponent(g.key)}.json`, location.href).href);
+    urls.push(new URL(`${DATA}/json/index.json`, location.href).href);
+    reg.active?.postMessage({ type: 'prefetch', urls });
+  }).catch(() => {});
+}
+
+// Installeerbare app (PWA): offline werken en icoon op het beginscherm.
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === '127.0.0.1' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Service worker niet geregistreerd:', e));
 }
 
 init();

@@ -109,7 +109,7 @@ export function describeCombo(meta, nums) {
   };
 }
 
-function passes(meta, nums, f, pastSet) {
+function passes(meta, nums, f) {
   const d = describeCombo(meta, nums);
   if (d.sum < f.sumLo || d.sum > f.sumHi) return false;
   if (!f.odd.has(d.odd) || !f.low.has(d.low)) return false;
@@ -118,22 +118,79 @@ function passes(meta, nums, f, pastSet) {
   for (const x of nums) { const b = Math.floor((x - 1) / 10); dec[b] = (dec[b] || 0) + 1; if (dec[b] > f.maxDecade) return false; }
   if (nums.every((x) => x <= 31)) return false;            // verjaardagen: populair
   if (nums.every((x) => x % 10 === nums[0] % 10)) return false; // zelfde eindcijfer
-  if (pastSet && pastSet.has(nums.join('-'))) return false;  // ooit al gewonnen = populair
   return true;
 }
 
+// ---------------------------------------------------------------- historiek
+
+// Index van alle trekkingen ooit, om snel te zien of (en hoe vaak) een
+// voorgestelde combinatie al gevallen is.
+export function buildHistory(meta, allDraws) {
+  if (meta.key === 'keno') {
+    // per trekking een bitmasker (3 x 32 bits) van de getrokken getallen
+    const masks = new Uint32Array(allDraws.length * 3);
+    allDraws.forEach((d, i) => { for (const n of d.main) masks[i * 3 + (n >> 5)] |= 1 << (n & 31); });
+    return { kind: 'subset', masks, dates: allDraws.map((d) => d.date) };
+  }
+  const map = new Map();
+  const withSign = new Map();
+  const sep = meta.kind === 'digits' ? '' : '-';
+  const add = (m, key, date) => { const h = m.get(key); if (h) { h.count++; h.last = date; } else m.set(key, { count: 1, last: date }); };
+  for (const d of allDraws) {
+    const key = d.main.join(sep);
+    add(map, key, d.date);
+    if (d.sign) add(withSign, key + '|' + d.sign, d.date);
+  }
+  return { kind: 'exact', map, withSign, sep };
+}
+
+// Hoe vaak viel deze combinatie al? -> { count, last, countWithSign?, lastWithSign? }
+export function lookupHistory(history, s) {
+  if (!history) return null;
+  if (history.kind === 'subset') {
+    const m = [0, 0, 0];
+    for (const n of s.main) m[n >> 5] |= 1 << (n & 31);
+    m[0] >>>= 0; m[1] >>>= 0; m[2] >>>= 0;
+    const { masks, dates } = history;
+    let count = 0, last = null;
+    for (let i = 0; i < dates.length; i++) {
+      if (((masks[i * 3] & m[0]) >>> 0) === m[0] && ((masks[i * 3 + 1] & m[1]) >>> 0) === m[1] && ((masks[i * 3 + 2] & m[2]) >>> 0) === m[2]) {
+        count++; last = dates[i];
+      }
+    }
+    return { count, last };
+  }
+  const key = s.main.join(history.sep);
+  const h = history.map.get(key) || { count: 0, last: null };
+  const out = { count: h.count, last: h.last };
+  if (s.sign) {
+    const hs = history.withSign.get(key + '|' + s.sign) || { count: 0, last: null };
+    out.countWithSign = hs.count; out.lastWithSign = hs.last;
+  }
+  return out;
+}
+
 // Genereer `count` voorstellen.
-// ctx = { meta, draws, mainFreq, extraFreq, patterns, digitPatterns, pick }
-export function generate(ctx, strategy, count) {
+// ctx = { meta, draws, mainFreq, extraFreq, patterns, digitPatterns, pick, history }
+// opts.avoidPast: enkel combinaties die nog nooit gevallen zijn (indien mogelijk).
+export function generate(ctx, strategy, count, opts = {}) {
   const { meta } = ctx;
+  const avoidPast = Boolean(opts.avoidPast && ctx.history);
   const out = [];
   const seen = new Set();
   let guard = 0;
   while (out.length < count && guard++ < count * 50) {
-    const s = meta.kind === 'digits' ? genDigits(ctx, strategy) : genPool(ctx, strategy);
+    let s, hist;
+    for (let attempt = 0; attempt < (avoidPast ? 300 : 1); attempt++) {
+      s = meta.kind === 'digits' ? genDigits(ctx, strategy) : genPool(ctx, strategy);
+      hist = lookupHistory(ctx.history, s);
+      if (!avoidPast || !hist || hist.count === 0) break;
+    }
     const key = s.main.join('-') + '|' + (s.extra || []).join('-') + '|' + (s.sign || '');
     if (seen.has(key)) continue;
     seen.add(key);
+    s.history = hist;
+    s.notFresh = avoidPast && hist && hist.count > 0; // geen nieuwe combinatie gevonden
     out.push(s);
   }
   return out;
@@ -153,10 +210,9 @@ function genPool(ctx, strategy) {
     const w = weightsFor(mainFreq.rows, strategy, numbers);
     if (strategy === 'balanced' && meta.key !== 'keno') {
       const filters = buildFilters(meta, patterns);
-      const pastSet = ctx.pastSet;
       for (let tries = 0; tries < 20000; tries++) {
         const cand = weightedSample(numbers, w, k).sort((a, b) => a - b);
-        if (passes(meta, cand, filters, pastSet)) { main = cand; break; }
+        if (passes(meta, cand, filters)) { main = cand; break; }
       }
     }
     if (!main) main = weightedSample(numbers, w, k);
