@@ -1,0 +1,48 @@
+# Haalt na de trekkingen automatisch de nieuwe uitslagen op, werkt de
+# databestanden bij (CSV/JSON) en commit ze. De web-app herberekent
+# de statistieken telkens uit deze bestanden.
+#
+# Opmerking: geplande workflows draaien enkel op de standaardbranch (main).
+name: Uitslagen bijwerken
+
+on:
+  schedule:
+    # Tijden in UTC. 22:41 UTC = na alle avondtrekkingen (Belgische tijd 23:41/00:41).
+    - cron: "41 22 * * *"
+    # Vangnet de volgende ochtend, voor het geval een bron laat bijwerkt.
+    - cron: "13 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # nodig om de bijgewerkte data te committen; verder niets
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Nieuwe uitslagen ophalen en statistiekbestanden herbouwen
+        run: python3 -m lottery update --months 2
+
+      - name: Tests
+        run: |
+          python3 -m unittest discover -s tests -v
+          node --test tests/*.test.mjs
+
+      - name: Wijzigingen committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then
+            echo "Geen nieuwe uitslagen."
+            exit 0
+          fi
+          git commit -m "Uitslagen bijgewerkt ($(date -u +%Y-%m-%d))"
+          git push

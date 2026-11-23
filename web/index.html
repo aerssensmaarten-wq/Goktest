@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Statistieken van alle trekkingen van de kansspelen van de Nationale Loterij.">
+  <title>Loterij Statistieken</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%232a78d6'/%3E%3Ctext x='16' y='21' font-size='14' font-family='sans-serif' text-anchor='middle' fill='white'%3E7%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <div class="brand">
+        <h1>Loterij Statistieken</h1>
+        <p id="updated" class="muted small">Gegevens laden…</p>
+      </div>
+      <nav id="tabs" class="tabs" aria-label="Spellen"></nav>
+    </div>
+  </header>
+  <main id="app" class="wrap" tabindex="-1"></main>
+  <footer class="wrap foot">
+    <p class="muted small">Onafhankelijke statistieken op basis van publieke uitslagen; geen officiële toepassing van de Nationale Loterij. Loterijtrekkingen zijn willekeurig: resultaten uit het verleden voorspellen de toekomst niet. Speel met mate - hulp nodig? <a href="https://www.druglijn.be/" rel="noopener noreferrer">De DrugLijn (ook voor gokken)</a> · <a href="https://www.nationale-loterij.be/speel-verantwoord/over" rel="noopener noreferrer">Speel verantwoord</a>. Enkel voor meerderjarigen.</p>
+  </footer>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

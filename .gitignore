@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.tmp-*
+.DS_Store
+node_modules/
+.env
+.env.*
+*.log
+
+# Wordt lokaal gegenereerd met 'python3 -m lottery rebuild' (te groot om dagelijks te committen)
+data/loterij.sqlite
