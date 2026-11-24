@@ -1,4 +1,4 @@
-# Nationale Loterij – statistieken
+# Goktest
 
 Analyse van **alle trekkingen ooit** van de kansspelen van de Nationale Loterij:
 Lotto, EuroMillions, EuroDreams, Vikinglotto, Keno, Joker+ en Pick3.
@@ -50,7 +50,7 @@ zonder adresbalk, en ook bruikbaar zonder internet (de laatst opgehaalde uitslag
 
 1. **Eenmalig: GitHub Pages aanzetten.** In de repository: *Settings → Pages → Build and deployment →
    Source: GitHub Actions*. Merge daarna naar `main`; de workflow publiceert de app op
-   `https://<gebruikersnaam>.github.io/Nationale-Loterij/web/` en werkt ze na elke trekking bij.
+   `https://<gebruikersnaam>.github.io/Goktest/web/` en werkt ze na elke trekking bij.
    GitHub Pages vanuit een **privé**-repository vereist een betaald GitHub-abonnement (Pro);
    anders moet de repository publiek worden. De gepubliceerde site is in beide gevallen publiek
    bereikbaar, maar bevat enkel de app en de (publieke) uitslagen: geen broncode, geen
