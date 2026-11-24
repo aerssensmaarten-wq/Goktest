@@ -432,6 +432,15 @@ function renderData() {
       el('p', { text: 'Na elke trekking haalt een automatische taak (GitHub Actions, zie .github/workflows/update.yml) de nieuwe uitslagen op, werkt de CSV- en JSON-bestanden bij en commit ze (de SQLite-database bouw je lokaal opnieuw met "python -m lottery update" of "rebuild"). De statistieken in deze app worden telkens bij het openen opnieuw berekend uit die bestanden. Handmatig bijwerken kan met "python -m lottery update".' })));
 }
 
+// Als app op de gsm blijft de pagina vaak uren open in de achtergrond. Kom je na
+// meer dan 10 minuten terug, dan laden we opnieuw zodat je de nieuwste uitslagen ziet.
+let hiddenSince = null;
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { hiddenSince = Date.now(); return; }
+  if (hiddenSince && Date.now() - hiddenSince > 10 * 60 * 1000 && navigator.onLine !== false) location.reload();
+  hiddenSince = null;
+});
+
 // Laat de service worker alle uitslagen bewaren, zodat elk spel ook offline werkt.
 function prefetchForOffline(games) {
   if (!('serviceWorker' in navigator)) return;
