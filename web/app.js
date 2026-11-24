@@ -1,5 +1,5 @@
 import { el, clear, nf, pf, df1 } from './dom.js';
-import { barChart, heatGrid } from './charts.js';
+import { barChart, heatGrid, hideTip } from './charts.js';
 import * as S from './stats.js';
 import { STRATEGIES, generate, buildHistory } from './generator.js';
 
@@ -56,6 +56,7 @@ async function init() {
 }
 
 function route() {
+  hideTip();
   const key = decodeURIComponent(location.hash.slice(1)) || state.index.games.find((g) => g.count)?.key;
   for (const t of $tabs.children) t.setAttribute('aria-current', t.dataset.key === key ? 'page' : 'false');
   if (key === 'data') return renderData();
