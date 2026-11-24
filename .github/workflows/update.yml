@@ -53,18 +53,13 @@ jobs:
           git commit -m "Uitslagen bijgewerkt ($(date -u +%Y-%m-%d))"
           git push
 
-  deploy:
+  build:
     needs: update
     if: always() && (needs.update.result == 'success' || needs.update.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
-      pages: write      # publiceren op GitHub Pages
-      id-token: write   # vereist door actions/deploy-pages
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -85,8 +80,23 @@ jobs:
           touch _site/.nojekyll
 
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
+
+  # Publiceren gebeurt in een aparte taak: zo vindt deploy-pages het
+  # geüploade pakket betrouwbaar terug.
+  deploy:
+    needs: build
+    if: always() && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write      # publiceren op GitHub Pages
+      id-token: write   # vereist door actions/deploy-pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
