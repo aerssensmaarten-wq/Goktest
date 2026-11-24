@@ -454,7 +454,9 @@ function prefetchForOffline(games) {
 
 // Installeerbare app (PWA): offline werken en icoon op het beginscherm.
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === '127.0.0.1' || location.hostname === 'localhost')) {
-  navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Service worker niet geregistreerd:', e));
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+    .then((reg) => reg.update()) // bij elk openen nakijken of er een nieuwe versie is
+    .catch((e) => console.warn('Service worker niet geregistreerd:', e));
 }
 
 init();
