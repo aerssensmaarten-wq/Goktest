@@ -1,6 +1,6 @@
 """Opdrachtregel: python -m lottery <opdracht>
 
-  update   Haal de nieuwste trekkingen op (laatste 2 maanden) en herbereken alles.
+  update   Haal de nieuwste trekkingen en jackpots op (laatste 2 maanden) en herbereken alles.
   full     Haal de volledige historiek op (hervat waar gebleven werd).
   rebuild  Bouw JSON/SQLite opnieuw op vanuit de CSV-bestanden (geen netwerk).
   serve    Start de web-app lokaal op http://127.0.0.1:8000
@@ -11,7 +11,7 @@ import argparse
 import sys
 from datetime import date
 
-from . import sources, storage
+from . import jackpots, sources, storage
 from .games import GAMES, get_game
 
 
@@ -158,6 +158,7 @@ def main(argv: list[str] | None = None) -> int:
     added = 0
     for k in keys:
         added += update_game(k, full=args.command == "full", months_back=args.months)
+    jackpots.update()  # jackpot van de volgende trekking (fouten zijn niet fataal)
     rebuild()
     _log(f"Klaar: {added} nieuwe trekking(en) in totaal.")
     return 0

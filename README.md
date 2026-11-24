@@ -11,7 +11,9 @@ Per spel toont de app:
   herhalingen uit de vorige trekking, eindcijfers, vaakst samen getrokken paren en drietallen,
   sterrenbeelden (Joker+), aantal verschillende cijfers (Pick3/Joker+);
 - een **chi-kwadraattoets** die aangeeft of de verschillen groter zijn dan toeval verklaart;
-- de **winkans** op de hoofdprijs;
+- de **winkans** op de hoofdprijs en de **jackpot van de volgende trekking** (Lotto, EuroMillions,
+  Vikinglotto; bij EuroDreams de vaste hoofdprijs), via lotteryguru.com;
+- uitleg bij de toevalstoets en bij elke voorstelmethode;
 - een **generator** die één of meerdere voorstellen maakt (1–50), met vijf methodes:
   gebalanceerd (aanbevolen), warme getallen, achterstallige getallen, mix, puur toeval;
 - bij elk voorstel of die combinatie **al eens gevallen** is (hoe vaak en wanneer laatst), en

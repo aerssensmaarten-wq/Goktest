@@ -1,0 +1,29 @@
+{
+ "source": "lotteryguru.com",
+ "games": {
+  "lotto": {
+   "nextDraw": "2026-11-25",
+   "nextJackpot": null,
+   "lastDraw": "2026-11-21",
+   "lastJackpot": 6000000
+  },
+  "euromillions": {
+   "nextDraw": "2026-11-24",
+   "nextJackpot": 46000000,
+   "lastDraw": "2026-11-20",
+   "lastJackpot": 37000000
+  },
+  "eurodreams": {
+   "nextDraw": "2026-11-26",
+   "nextJackpot": 7200000,
+   "lastDraw": "2026-11-23",
+   "lastJackpot": 7200000
+  },
+  "vikinglotto": {
+   "nextDraw": "2026-11-25",
+   "nextJackpot": null,
+   "lastDraw": "2026-11-18",
+   "lastJackpot": 11000000
+  }
+ }
+}

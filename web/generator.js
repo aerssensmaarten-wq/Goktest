@@ -13,22 +13,44 @@ export const STRATEGIES = {
   balanced: {
     label: 'Gebalanceerd (aanbevolen)',
     help: 'Volgt de meest voorkomende patronen (som, even/oneven, laag/hoog, spreiding), licht gewogen naar vaak getrokken getallen, en vermijdt populaire combinaties zodat je een eventuele jackpot met minder mensen deelt.',
+    detail: [
+      'De app kijkt hoe winnende combinaties er doorgaans uitzien en houdt enkel voorstellen over die daarbij passen:',
+      '• de som van de getallen ligt in het gebied waar de meeste trekkingen vallen (bv. bij Lotto ongeveer 105 tot 170);',
+      '• de verhouding even/oneven en laag/hoog is een van de vaakst voorkomende (bv. 3 oneven + 3 even);',
+      '• hoogstens één paar opeenvolgende getallen (zoals 12-13) en niet te veel getallen uit hetzelfde tiental;',
+      '• geen combinatie met enkel getallen tot 31: die worden massaal gespeeld als verjaardagen, dus bij winst deel je met veel mensen.',
+      'Binnen die regels krijgen vaak getrokken getallen een iets grotere kans. Waarom aanbevolen? Niet omdat je vaker wint, maar omdat je bij winst gemiddeld meer uitbetaald krijgt.',
+    ],
   },
   hot: {
     label: 'Warme getallen',
     help: 'Getallen die in de gekozen periode het vaakst getrokken werden krijgen een veel grotere kans.',
+    detail: [
+      'Elk getal krijgt een gewicht volgens hoe vaak het in de gekozen analyseperiode getrokken werd: hoe vaker, hoe groter de kans dat het in een voorstel komt. De top-10 "Meest getrokken" komt dus vaak terug.',
+      'Achterliggend idee: "wat vaak valt, blijft vallen". Bij een eerlijke trekking klopt dat niet, maar het is een populaire manier van spelen.',
+    ],
   },
   cold: {
     label: 'Achterstallige getallen',
     help: 'Getallen die al het langst niet meer getrokken werden krijgen een grotere kans ("ze zijn aan de beurt" - let op: een trekking heeft geen geheugen).',
+    detail: [
+      'Elk getal krijgt een gewicht volgens hoe lang het al niet meer viel, vergeleken met zijn gemiddelde interval. Getallen uit de lijst "Langst niet getrokken" komen dus vaker in je voorstellen.',
+      'Achterliggend idee: "dat getal moet nu eens vallen". Dat heet de gokkersdwaling: de ballen weten niet wanneer ze laatst getrokken werden.',
+    ],
   },
   mixed: {
     label: 'Mix warm + achterstallig',
     help: 'Ongeveer de helft warme en de helft achterstallige getallen.',
+    detail: [
+      'De helft van de getallen wordt gekozen zoals bij "Warme getallen", de andere helft zoals bij "Achterstallige getallen". Voor wie beide ideeën wil combineren.',
+    ],
   },
   random: {
     label: 'Puur toeval',
     help: 'Elk getal evenveel kans - wiskundig even goed als elke andere methode.',
+    detail: [
+      'Zoals een Quick Pick aan de kassa: elk getal heeft exact dezelfde kans. Wiskundig is dit even goed als elke andere methode.',
+    ],
   },
 };
 

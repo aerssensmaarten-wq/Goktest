@@ -36,6 +36,7 @@ async function loadGame(key) {
 async function init() {
   try {
     state.index = await getJSON(`${DATA}/json/index.json`);
+    try { state.jackpots = (await getJSON(`${DATA}/json/jackpots.json`)).games || {}; } catch { state.jackpots = {}; }
   } catch (e) {
     $app.replaceChildren(el('div', { class: 'card error' },
       el('h2', { text: 'Gegevens niet gevonden' }),
@@ -129,13 +130,66 @@ async function renderGame(meta) {
     stat('Laatste trekking', S.fmtDate(last.date)),
     stat('Trekkingen in analyse', nf.format(draws.length), `van ${nf.format(all.length)} in totaal`),
     stat(meta.key === 'keno' ? `Kans op ${state.pick}/${state.pick} juist` : 'Kans op de hoofdprijs', S.fmtOdds(odds)),
-    isPool ? stat('Toevalstoets (χ²)', ctx.mainFreq.p < 0.01 ? 'Opvallend' : 'Consistent met toeval', `p = ${ctx.mainFreq.p.toFixed(3)}`) : stat('Unieke combinaties', nf.format(ctx.digitPatterns.uniqueCombos)));
+    jackpotStat(meta),
+    isPool ? stat('Toevalstoets', ctx.mainFreq.p < 0.01 ? 'Opvallend' : 'Niets opvallends', ctx.mainFreq.p < 0.01 ? 'meer verschil dan toeval verklaart' : 'verschillen zijn gewoon toeval') : stat('Unieke combinaties', nf.format(ctx.digitPatterns.uniqueCombos)));
+  const explain = details('Wat betekenen deze cijfers?', ...explainStats(meta, ctx, odds));
 
   const lastCard = card('Laatste uitslag', el('div', { class: 'last-draw' }, el('span', { class: 'muted', text: S.fmtDate(last.date) }), drawBalls(meta, last)));
 
-  $app.replaceChildren(head, stats, lastCard, renderGenerator(meta, ctx),
+  $app.replaceChildren(head, stats, explain, lastCard, renderGenerator(meta, ctx),
     ...(isPool ? renderPool(meta, ctx) : renderDigits(meta, ctx)),
     renderHistory(meta, all));
+}
+
+// ------------------------------------------------------------ jackpot + uitleg
+
+const eur = new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+function fmtMoney(v) {
+  if (v >= 1e6) return `€ ${df1.format(v / 1e6)} miljoen`;
+  return eur.format(v);
+}
+function weekday(iso) {
+  return new Date(iso + 'T12:00:00Z').toLocaleDateString('nl-BE', { weekday: 'long', day: '2-digit', month: '2-digit', timeZone: 'UTC' });
+}
+
+function jackpotStat(meta) {
+  const j = (state.jackpots || {})[meta.key];
+  if (!j) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = j.nextDraw && j.nextDraw >= today;
+  if (meta.key === 'eurodreams') {
+    return stat('Hoofdprijs', '€ 20.000 per maand', `gedurende 30 jaar${upcoming ? ` · trekking ${weekday(j.nextDraw)}` : ''}`);
+  }
+  if (upcoming && j.nextJackpot) return stat('Jackpot volgende trekking', fmtMoney(j.nextJackpot), weekday(j.nextDraw));
+  if (j.lastJackpot) {
+    return stat('Jackpot volgende trekking', 'Nog niet bekend',
+      `vorige: ${fmtMoney(j.lastJackpot)} (${S.fmtDate(j.lastDraw).slice(0, 5)})`);
+  }
+  return null;
+}
+
+function explainStats(meta, ctx, odds) {
+  const out = [];
+  out.push(el('p', {}, el('strong', { text: 'Kans op de hoofdprijs: ' }),
+    `met één rooster win je gemiddeld één keer op ${nf.format(Math.round(1 / odds))} trekkingen de hoofdprijs. Elke combinatie heeft precies die kans, welke methode je ook gebruikt.`));
+  if (state.jackpots?.[meta.key]) {
+    out.push(el('p', {}, el('strong', { text: 'Jackpot: ' }),
+      meta.key === 'eurodreams'
+        ? 'EuroDreams heeft geen opbouwende jackpot: de hoofdprijs is altijd € 20.000 per maand gedurende 30 jaar.'
+        : 'het geraamde bedrag voor de volgende trekking, zoals gepubliceerd door lotteryguru.com. Is de raming nog niet bekend, dan zie je de jackpot van de vorige trekking; werd die niet gewonnen, dan wordt de volgende hoger.'));
+  }
+  if (ctx.mainFreq) {
+    const F = ctx.mainFreq;
+    out.push(el('p', {}, el('strong', { text: 'Toevalstoets: ' }),
+      'sommige getallen zijn vaker getrokken dan andere. De vraag is: zijn die verschillen groter dan je bij puur toeval zou verwachten? ' +
+      'Ook bij een perfect eerlijke trekking valt niet elk getal even vaak, net zoals 100 keer een munt opgooien zelden precies 50 keer kop geeft. ' +
+      'De chi-kwadraattoets meet dat. ',
+      el('em', { text: '"Niets opvallends"' }),
+      ` betekent: de verschillen zijn zo klein dat ze gewoon door toeval komen, dus de "warme" getallen hebben geen echte voorsprong. (Technisch: p = ${F.p.toFixed(2).replace('.', ',')}; pas onder 0,01 zou het opvallend zijn.) `,
+      el('em', { text: '"Opvallend"' }),
+      ' zou betekenen dat er iets meer speelt dan toeval, bijvoorbeeld een wijziging van de spelregels binnen de gekozen periode.'));
+  }
+  return out;
 }
 
 // ------------------------------------------------------------ generator
@@ -178,7 +232,13 @@ function renderGenerator(meta, ctx) {
     el('span', { class: 'switch-track', 'aria-hidden': 'true' }),
     el('span', { text: meta.key === 'keno' ? 'Enkel getallen die nog nooit samen getrokken werden' : 'Enkel combinaties die nog nooit gevallen zijn' }));
   const box = card('Voorstellen voor je volgende rooster',
-    el('div', { class: 'controls' }, controls), toggle, help, results,
+    el('div', { class: 'controls' }, controls), toggle, help,
+    details('Hoe werken de methodes?', ...Object.values(STRATEGIES).map((st) =>
+      el('div', { class: 'method' }, el('h4', { text: st.label }), ...st.detail.map((line) => el('p', { text: line })))),
+      el('div', { class: 'method' }, el('h4', { text: 'Schakelaar "nog nooit gevallen"' }),
+        el('p', { text: 'Staat hij aan, dan krijg je enkel combinaties die in de hele geschiedenis van het spel nog nooit getrokken werden (bij Keno: getallen die nog nooit allemaal samen vielen). Een oude winnende combinatie heeft evenveel kans als elke andere, maar sommige mensen spelen die bewust opnieuw - bij winst deel je dan.' }),
+        el('p', { text: 'Onder elk voorstel zie je hoe vaak die combinatie al viel en wanneer laatst. Bij Pick3 zijn bijna alle 1.000 combinaties al eens gevallen; dan meldt de app dat een nieuwe niet mogelijk is.' }))),
+    results,
     el('p', { class: 'note', text: 'Eerlijk is eerlijk: elke combinatie heeft bij een eerlijke trekking exact dezelfde kans. De gebalanceerde methode kiest combinaties met de meest voorkomende patronen en vermijdt populaire keuzes (enkel verjaardagen, rijtjes). Met de schakelaar sluit je bovendien combinaties uit die al eens gevallen zijn: sommige spelers spelen die bewust opnieuw. Dat verhoogt niet je kans, maar wel je verwachte uitbetaling: win je, dan deel je de pot met minder mensen.' }));
   queueMicrotask(run);
   return box;
@@ -236,7 +296,7 @@ function renderPool(meta, ctx) {
     details('Toon als staafdiagram', barChart(freqRows, { expected: avgExpected, title: 'Frequentie per getal' })),
     details('Toon volledige tabel', table(['Getal', 'Aantal', '%', 'Verwacht', 'Afwijking', 'Laatst getrokken', 'Trekkingen geleden', 'Gem. interval', 'Langste interval'],
       F.rows.map((r) => [String(r.n), nf.format(r.count), pf.format(r.pct), nf.format(Math.round(r.expected)), `${r.deviation >= 0 ? '+' : ''}${pf.format(r.deviation)}`, S.fmtDate(r.lastDate), String(r.since), r.avgGap ? df1.format(r.avgGap) : '-', String(r.maxGap)]), { class: 'num' })),
-    el('p', { class: 'note', text: `Chi-kwadraattoets: χ² = ${df1.format(F.chi)} bij ${F.df} vrijheidsgraden, p = ${F.p.toFixed(3)}. ${F.p < 0.01 ? 'De verschillen zijn groter dan je bij puur toeval zou verwachten - mogelijk door formulewijzigingen in de gekozen periode.' : 'De verschillen tussen "warme" en "koude" getallen zijn volledig te verklaren door toeval.'}` })));
+    el('p', { class: 'note', text: `Chi-kwadraattoets: χ² = ${df1.format(F.chi)} bij ${F.df} vrijheidsgraden, p = ${F.p.toFixed(3)}. ${F.p < 0.01 ? 'De verschillen zijn groter dan je bij puur toeval zou verwachten - mogelijk door formulewijzigingen in de gekozen periode.' : 'Niets opvallends: de verschillen tussen "warme" en "koude" getallen zijn volledig te verklaren door toeval.'}` })));
 
   if (meta.extraCount && ctx.extraFreq) {
     const E = ctx.extraFreq;
@@ -377,6 +437,7 @@ function prefetchForOffline(games) {
   navigator.serviceWorker.ready.then((reg) => {
     const urls = games.map((g) => new URL(`${DATA}/json/${encodeURIComponent(g.key)}.json`, location.href).href);
     urls.push(new URL(`${DATA}/json/index.json`, location.href).href);
+    urls.push(new URL(`${DATA}/json/jackpots.json`, location.href).href);
     reg.active?.postMessage({ type: 'prefetch', urls });
   }).catch(() => {});
 }
