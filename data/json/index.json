@@ -1,0 +1,226 @@
+{
+ "lastDraw": "2026-11-22",
+ "games": [
+  {
+   "key": "lotto",
+   "name": "Lotto",
+   "kind": "pool",
+   "mainCount": 6,
+   "mainMin": 1,
+   "mainMax": 45,
+   "extraCount": 1,
+   "extraMax": 45,
+   "extraName": "Bonusgetal",
+   "extraFromMainPool": true,
+   "hasSign": false,
+   "pickCount": 0,
+   "pickMin": 0,
+   "pickMax": 0,
+   "drawDays": "woensdag en zaterdag",
+   "description": "6 getallen uit 45 (tot 2011: uit 42) + bonusgetal.",
+   "eras": [
+    {
+     "from": "1978-02-04",
+     "mainMax": 42,
+     "extraMax": 42
+    },
+    {
+     "from": "2011-10-01",
+     "mainMax": 45,
+     "extraMax": 45
+    }
+   ],
+   "count": 4264,
+   "first": "1978-02-04",
+   "last": "2026-11-21"
+  },
+  {
+   "key": "euromillions",
+   "name": "EuroMillions",
+   "kind": "pool",
+   "mainCount": 5,
+   "mainMin": 1,
+   "mainMax": 50,
+   "extraCount": 2,
+   "extraMax": 12,
+   "extraName": "Sterren",
+   "extraFromMainPool": false,
+   "hasSign": false,
+   "pickCount": 0,
+   "pickMin": 0,
+   "pickMax": 0,
+   "drawDays": "dinsdag en vrijdag",
+   "description": "5 getallen uit 50 + 2 sterren uit 12 (vroeger uit 9 en 11).",
+   "eras": [
+    {
+     "from": "2004-02-13",
+     "mainMax": 50,
+     "extraMax": 9
+    },
+    {
+     "from": "2011-05-10",
+     "mainMax": 50,
+     "extraMax": 11
+    },
+    {
+     "from": "2016-09-24",
+     "mainMax": 50,
+     "extraMax": 12
+    }
+   ],
+   "count": 2000,
+   "first": "2004-02-13",
+   "last": "2026-11-20"
+  },
+  {
+   "key": "eurodreams",
+   "name": "EuroDreams",
+   "kind": "pool",
+   "mainCount": 6,
+   "mainMin": 1,
+   "mainMax": 40,
+   "extraCount": 1,
+   "extraMax": 5,
+   "extraName": "Dream-nummer",
+   "extraFromMainPool": false,
+   "hasSign": false,
+   "pickCount": 0,
+   "pickMin": 0,
+   "pickMax": 0,
+   "drawDays": "maandag en donderdag",
+   "description": "6 getallen uit 40 + 1 Dream-nummer uit 5.",
+   "eras": [
+    {
+     "from": "2023-11-06",
+     "mainMax": 40,
+     "extraMax": 5
+    }
+   ],
+   "count": 318,
+   "first": "2023-11-06",
+   "last": "2026-11-19"
+  },
+  {
+   "key": "vikinglotto",
+   "name": "Vikinglotto",
+   "kind": "pool",
+   "mainCount": 6,
+   "mainMin": 1,
+   "mainMax": 48,
+   "extraCount": 1,
+   "extraMax": 5,
+   "extraName": "Vikingnummer",
+   "extraFromMainPool": false,
+   "hasSign": false,
+   "pickCount": 0,
+   "pickMin": 0,
+   "pickMax": 0,
+   "drawDays": "woensdag",
+   "description": "6 getallen uit 48 + 1 Vikingnummer uit 5 (2017-2021: uit 8).",
+   "eras": [
+    {
+     "from": "2017-05-24",
+     "mainMax": 48,
+     "extraMax": 8
+    },
+    {
+     "from": "2021-06-09",
+     "mainMax": 48,
+     "extraMax": 5
+    }
+   ],
+   "count": 496,
+   "first": "2017-05-24",
+   "last": "2026-11-18"
+  },
+  {
+   "key": "keno",
+   "name": "Keno",
+   "kind": "pool",
+   "mainCount": 20,
+   "mainMin": 1,
+   "mainMax": 70,
+   "extraCount": 0,
+   "extraMax": 0,
+   "extraName": "",
+   "extraFromMainPool": false,
+   "hasSign": false,
+   "pickCount": 10,
+   "pickMin": 2,
+   "pickMax": 10,
+   "drawDays": "dagelijks",
+   "description": "Er worden 20 getallen uit 70 getrokken (vroeger uit 80); je kiest er zelf 2 tot 10.",
+   "eras": [
+    {
+     "from": "1995-05-29",
+     "mainMax": 80,
+     "extraMax": 0
+    },
+    {
+     "from": "2008-03-10",
+     "mainMax": 70,
+     "extraMax": 0
+    }
+   ],
+   "count": 10132,
+   "first": "1995-05-29",
+   "last": "2026-11-22"
+  },
+  {
+   "key": "jokerplus",
+   "name": "Joker+",
+   "kind": "digits",
+   "mainCount": 6,
+   "mainMin": 0,
+   "mainMax": 9,
+   "extraCount": 0,
+   "extraMax": 0,
+   "extraName": "",
+   "extraFromMainPool": false,
+   "hasSign": true,
+   "pickCount": 0,
+   "pickMin": 0,
+   "pickMax": 0,
+   "drawDays": "dagelijks",
+   "description": "6 cijfers (0-9) in volgorde + een sterrenbeeld.",
+   "eras": [
+    {
+     "from": "2011-02-02",
+     "mainMax": 9,
+     "extraMax": 0
+    }
+   ],
+   "count": 5115,
+   "first": "2011-02-02",
+   "last": "2026-11-22"
+  },
+  {
+   "key": "pick3",
+   "name": "Pick3",
+   "kind": "digits",
+   "mainCount": 3,
+   "mainMin": 0,
+   "mainMax": 9,
+   "extraCount": 0,
+   "extraMax": 0,
+   "extraName": "",
+   "extraFromMainPool": false,
+   "hasSign": false,
+   "pickCount": 0,
+   "pickMin": 0,
+   "pickMax": 0,
+   "drawDays": "maandag t.e.m. zaterdag",
+   "description": "3 cijfers (0-9) in volgorde.",
+   "eras": [
+    {
+     "from": "2002-09-02",
+     "mainMax": 9,
+     "extraMax": 0
+    }
+   ],
+   "count": 7919,
+   "first": "2002-09-02",
+   "last": "2026-11-22"
+  }
+ ]
+}

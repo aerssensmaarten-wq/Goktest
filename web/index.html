@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Statistieken van alle trekkingen van de kansspelen van de Nationale Loterij.">
+  <title>Loterij Statistieken</title>
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#2a78d6">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Loterij">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <div class="brand">
+        <h1>Loterij Statistieken</h1>
+        <p id="updated" class="muted small">Gegevens laden…</p>
+      </div>
+      <nav id="tabs" class="tabs" aria-label="Spellen"></nav>
+    </div>
+  </header>
+  <main id="app" class="wrap" tabindex="-1"></main>
+  <footer class="wrap foot">
+    <p class="muted small">Onafhankelijke statistieken op basis van publieke uitslagen; geen officiële toepassing van de Nationale Loterij. Loterijtrekkingen zijn willekeurig: resultaten uit het verleden voorspellen de toekomst niet. Speel met mate - hulp nodig? <a href="https://www.druglijn.be/" rel="noopener noreferrer">De DrugLijn (ook voor gokken)</a> · <a href="https://www.nationale-loterij.be/speel-verantwoord/over" rel="noopener noreferrer">Speel verantwoord</a>. Enkel voor meerderjarigen.</p>
+  </footer>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

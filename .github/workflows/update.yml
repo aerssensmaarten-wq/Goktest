@@ -1,0 +1,92 @@
+# Haalt na de trekkingen automatisch de nieuwe uitslagen op, werkt de
+# databestanden bij (CSV/JSON), commit ze, en publiceert de app op GitHub Pages
+# (zodat je ze op je gsm als app kunt installeren).
+#
+# Opmerking: geplande workflows draaien enkel op de standaardbranch (main).
+name: Uitslagen bijwerken en app publiceren
+
+on:
+  schedule:
+    # Tijden in UTC. 22:41 UTC = na alle avondtrekkingen (Belgische tijd 23:41/00:41).
+    - cron: "41 22 * * *"
+    # Vangnet de volgende ochtend, voor het geval een bron laat bijwerkt.
+    - cron: "13 6 * * *"
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: ["web/**", "data/**", ".github/workflows/update.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write   # nodig om de bijgewerkte data te committen
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Nieuwe uitslagen ophalen en statistiekbestanden herbouwen
+        run: python3 -m lottery update --months 2
+
+      - name: Tests
+        run: |
+          python3 -m unittest discover -s tests -v
+          node --test tests/*.test.mjs
+
+      - name: Wijzigingen committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then
+            echo "Geen nieuwe uitslagen."
+            exit 0
+          fi
+          git commit -m "Uitslagen bijgewerkt ($(date -u +%Y-%m-%d))"
+          git push
+
+  deploy:
+    needs: update
+    if: always() && (needs.update.result == 'success' || needs.update.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write      # publiceren op GitHub Pages
+      id-token: write   # vereist door actions/deploy-pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}   # inclusief de zonet gecommitte uitslagen
+
+      - name: Site samenstellen (enkel app + uitslagen, geen broncode)
+        run: |
+          mkdir -p _site/data
+          cp -r web _site/web
+          rm -f _site/web/package.json
+          cp -r data/csv data/json _site/data/
+          sed -i "s/const VERSION = '[^']*'/const VERSION = '${GITHUB_SHA::8}'/" _site/web/sw.js
+          cat > _site/index.html <<'HTML'
+          <!doctype html><html lang="nl"><head><meta charset="utf-8">
+          <meta http-equiv="refresh" content="0; url=web/"><title>Loterij Statistieken</title></head>
+          <body><a href="web/">Open Loterij Statistieken</a></body></html>
+          HTML
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
