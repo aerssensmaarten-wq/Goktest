@@ -16,14 +16,32 @@ function showTip(evt, lines) {
   const r = t.getBoundingClientRect();
   let x, y;
   if (evt.clientX !== undefined && evt.type.startsWith('pointer')) { x = evt.clientX; y = evt.clientY; }
-  else { const b = evt.target.getBoundingClientRect(); x = b.left + b.width / 2; y = b.top; }
+  else { const b = (evt.currentTarget || evt.target).getBoundingClientRect(); x = b.left + b.width / 2; y = b.top; }
   let left = x + 12, top = y - r.height - 12;
   if (left + r.width > window.innerWidth - 8) left = x - r.width - 12;
   if (top < 8) top = y + 16;
   t.style.left = `${Math.max(8, left)}px`;
   t.style.top = `${top}px`;
+  clearTimeout(hideTimer);
+  if (evt.pointerType === 'touch' || !evt.type.startsWith('pointer')) hideTimer = setTimeout(hideTip, 4000);
 }
-function hideTip() { if (tooltip) tooltip.style.display = 'none'; }
+let hideTimer;
+export function hideTip() {
+  clearTimeout(hideTimer);
+  if (tooltip) tooltip.style.display = 'none';
+}
+
+// Op een gsm (aanraken) komt er geen "muis verlaat"-signaal: verberg de uitleg
+// daarom bij scrollen, bij een tik ergens anders, bij een ander spel, en
+// automatisch na enkele seconden.
+if (typeof window !== 'undefined') {
+  window.addEventListener('scroll', hideTip, { passive: true, capture: true });
+  window.addEventListener('resize', hideTip, { passive: true });
+  window.addEventListener('hashchange', hideTip);
+  document.addEventListener('pointerdown', (e) => {
+    if (!(e.target instanceof Element) || !e.target.closest('.viz-bar, .heat-cell')) hideTip();
+  }, { passive: true });
+}
 
 // data: [{ label, value, tip: [regels] }]
 // opts: { expected, height, yLabel, title }
@@ -56,6 +74,7 @@ export function barChart(data, opts = {}) {
     g.addEventListener('pointermove', (e) => showTip(e, lines));
     g.addEventListener('pointerleave', hideTip);
     g.addEventListener('focus', (e) => showTip(e, lines));
+    g.addEventListener('click', (e) => showTip(e, lines)); // tikken op gsm
     g.addEventListener('blur', hideTip);
     root.appendChild(g);
     if (i % labelEvery === 0 || data.length <= 30)
@@ -99,6 +118,7 @@ export function heatGrid(rows, { cols = 10, label = 'getal' } = {}) {
     cell.addEventListener('pointermove', (e) => showTip(e, lines));
     cell.addEventListener('pointerleave', hideTip);
     cell.addEventListener('focus', (e) => showTip(e, lines));
+    cell.addEventListener('click', (e) => showTip(e, lines)); // tikken op gsm
     cell.addEventListener('blur', hideTip);
     grid.appendChild(cell);
   }

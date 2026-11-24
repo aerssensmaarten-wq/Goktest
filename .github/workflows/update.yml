@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   update:
-    if: github.event_name != 'push'
+    # draait ook bij een merge naar main, zodat de site meteen de nieuwste uitslagen toont
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from lottery import sources, storage
+from lottery import jackpots, sources, storage
 from lottery.games import GAMES
 
 
@@ -93,6 +93,22 @@ class StorageTests(unittest.TestCase):
                 storage.save(g, merged)
                 self.assertEqual(storage.load(g), merged)
                 self.assertEqual((tmp / "csv" / "jokerplus.csv").stat().st_mode & 0o777, 0o644)
+
+
+class JackpotTests(unittest.TestCase):
+    def test_parse_next_and_last(self):
+        html = ("<div>Next draw Tuesday 24 Nov 2026</div><span>19 h : 24 m</span><p>Next Jackpot 46,000,000€</p>"
+                "<h3>Past Results</h3> Friday 20 Nov 2026 <li>8<li>21<li>24<li>36<li>49<li>1<li>8 Jackpot 37,000,000€")
+        self.assertEqual(jackpots.parse(html), {"nextDraw": "2026-11-24", "nextJackpot": 46000000,
+                                                "lastDraw": "2026-11-20", "lastJackpot": 37000000})
+
+    def test_parse_without_next_jackpot_and_absurd_amount(self):
+        html = ("Next draw Wednesday 25 Nov 2026 1 day Visit Website Past Results Saturday 21 Nov 2026 "
+                "11 15 19 23 34 41 38 Jackpot 999,999,999,999€")
+        out = jackpots.parse(html)
+        self.assertEqual(out["nextDraw"], "2026-11-25")
+        self.assertIsNone(out["nextJackpot"])
+        self.assertIsNone(out["lastJackpot"])  # onrealistisch bedrag wordt geweigerd
 
 
 class EraTests(unittest.TestCase):

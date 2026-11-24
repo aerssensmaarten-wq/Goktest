@@ -204,3 +204,6 @@ svg.viz { width: 100%; min-width: 300px; height: auto; display: block; }
   h2 { font-size: 1.3rem; }
   .card { padding: 14px; }
 }
+details.more > p, details.more .method p { font-size: .88rem; color: var(--text-2); margin: 6px 0; }
+details.more .method { margin-top: 10px; }
+details.more .method h4 { color: var(--text); margin: 8px 0 2px; }
