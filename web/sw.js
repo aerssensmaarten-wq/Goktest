@@ -1,8 +1,7 @@
 // Service worker: maakt de app installeerbaar en bruikbaar zonder internet.
-// - App-bestanden: direct uit de cache, op de achtergrond ververst.
-// - Uitslagen (data/json): altijd eerst het netwerk (nieuwste trekkingen),
-//   bij geen verbinding de laatst opgeslagen versie.
-const VERSION = 'v3';
+// Alles gaat eerst via het netwerk (zodat je altijd de nieuwste versie en
+// uitslagen ziet) en valt enkel zonder verbinding terug op de bewaarde kopie.
+const VERSION = 'v4';
 const SHELL = `shell-${VERSION}`;
 const DATA = 'data-v1';
 const SHELL_FILES = [
@@ -11,13 +10,22 @@ const SHELL_FILES = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(SHELL).then((c) => c.addAll(SHELL_FILES)).then(() => self.skipWaiting()));
+  // cache: 'reload' = rechtstreeks van de server, niet uit de browsercache
+  event.waitUntil(caches.open(SHELL)
+    .then((c) => c.addAll(SHELL_FILES.map((f) => new Request(f, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     for (const key of await caches.keys()) if (key !== SHELL && key !== DATA) await caches.delete(key);
+    const hadOldVersion = (await caches.keys()).some((k) => k.startsWith('shell-') && k !== SHELL);
+    for (const key of await caches.keys()) if (key !== SHELL && key !== DATA) await caches.delete(key);
     await self.clients.claim();
+    // Nieuwe versie geïnstalleerd: open vensters meteen herladen met de nieuwe app.
+    if (hadOldVersion) {
+      for (const client of await self.clients.matchAll({ type: 'window' })) client.navigate(client.url).catch(() => {});
+    }
   })());
 });
 
@@ -28,7 +36,7 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.includes('/data/')) {
     event.respondWith(networkFirst(req));
   } else {
-    event.respondWith(staleWhileRevalidate(req, event));
+    event.respondWith(networkFirstShell(req));
   }
 });
 
@@ -76,13 +84,20 @@ self.addEventListener('message', (event) => {
   })());
 });
 
-async function staleWhileRevalidate(req, event) {
+async function networkFirstShell(req) {
   const cache = await caches.open(SHELL);
-  const hit = await cache.match(req, { ignoreSearch: true });
-  const update = fetch(req).then((res) => {
-    if (res.ok) cache.put(req, res.clone());
+  try {
+    // max. 4 s wachten op het netwerk; daarna (of offline) de bewaarde versie
+    const res = await Promise.race([
+      // een paginaverzoek (navigate) mag niet met extra opties gekopieerd worden: haal de URL op
+      fetch(req.mode === 'navigate' ? req.url : req, { cache: 'no-cache' }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000)),
+    ]);
+    if (res.ok) await cache.put(req, res.clone());
     return res;
-  }).catch(() => null);
-  if (hit) { event.waitUntil(update); return hit; }
-  return (await update) || (await cache.match('index.html')) || Response.error();
+  } catch (err) {
+    const hit = (await cache.match(req, { ignoreSearch: true })) || (req.mode === 'navigate' ? await cache.match('index.html') : null);
+    if (hit) return hit;
+    throw err;
+  }
 }
